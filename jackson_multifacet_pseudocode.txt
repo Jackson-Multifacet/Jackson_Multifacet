@@ -1,0 +1,949 @@
+# RECRUITMENT & BUSINESS SUPPORT SERVICES PLATFORM
+## Complete System Pseudocode & Architecture
+
+---
+
+## 1. DATABASE MODELS (Django Backend)
+
+### 1.1 USER MANAGEMENT
+```
+MODEL: CustomUser (extends Django AbstractUser)
+    - id (auto-generated)
+    - email (unique, required)
+    - username (unique, required)
+    - first_name
+    - last_name
+    - phone_number
+    - user_type (choices: CLIENT, ADMIN, SERVICE_PROVIDER, CANDIDATE)
+    - profile_picture (image)
+    - company_name (optional, for business clients)
+    - date_joined (auto)
+    - is_active
+    - is_staff
+    
+    METHODS:
+        - get_full_name()
+        - get_user_type_display()
+        - __str__() returns email
+```
+
+### 1.2 SERVICE CATALOG
+```
+MODEL: ServiceCategory
+    - id
+    - name (e.g., "Recruitment", "Digital Solutions", "Creative Design")
+    - description
+    - icon/image
+    - slug (auto-generated from name)
+    - is_active
+    - created_at
+    - updated_at
+    
+    METHODS:
+        - __str__() returns name
+        - get_services_count()
+
+MODEL: Service
+    - id
+    - category (ForeignKey to ServiceCategory)
+    - name (e.g., "Website Development", "CV Writing")
+    - description (detailed)
+    - short_description
+    - base_price (decimal)
+    - pricing_type (choices: FIXED, HOURLY, CUSTOM)
+    - delivery_time (in days)
+    - features (JSON field or TextField)
+    - requirements (what client needs to provide)
+    - image
+    - is_active
+    - created_at
+    - updated_at
+    
+    METHODS:
+        - __str__() returns name
+        - get_category_name()
+        - get_total_orders()
+
+MODEL: ServicePackage (for tiered pricing)
+    - id
+    - service (ForeignKey to Service)
+    - package_name (e.g., "Basic", "Standard", "Premium")
+    - price
+    - features (JSON or TextField)
+    - delivery_time
+    - is_active
+    
+    METHODS:
+        - __str__() returns service name + package name
+```
+
+### 1.3 RECRUITMENT MODULE
+```
+MODEL: JobPosting
+    - id
+    - posted_by (ForeignKey to CustomUser - CLIENT)
+    - job_title
+    - company_name
+    - job_description
+    - job_requirements
+    - employment_type (choices: FULL_TIME, PART_TIME, CONTRACT, REMOTE)
+    - location
+    - salary_range_min (optional)
+    - salary_range_max (optional)
+    - experience_level (choices: ENTRY, MID, SENIOR)
+    - deadline (application deadline)
+    - status (choices: DRAFT, ACTIVE, CLOSED, FILLED)
+    - created_at
+    - updated_at
+    
+    METHODS:
+        - __str__() returns job title
+        - is_active()
+        - get_applications_count()
+        - close_job()
+
+MODEL: JobApplication
+    - id
+    - job (ForeignKey to JobPosting)
+    - candidate (ForeignKey to CustomUser - CANDIDATE)
+    - resume (file upload)
+    - cover_letter (text)
+    - portfolio_link (optional)
+    - status (choices: PENDING, REVIEWED, SHORTLISTED, REJECTED, HIRED)
+    - applied_at
+    - reviewed_at (optional)
+    - notes (admin notes)
+    
+    METHODS:
+        - __str__() returns candidate name + job title
+        - mark_as_reviewed()
+        - shortlist()
+        - reject()
+
+MODEL: CandidateProfile
+    - id
+    - user (OneToOne to CustomUser - CANDIDATE)
+    - resume (file upload)
+    - skills (TextField or JSON)
+    - experience_years
+    - education
+    - portfolio_links
+    - linkedin_profile
+    - github_profile (optional)
+    - availability (choices: IMMEDIATE, 2_WEEKS, 1_MONTH, NOT_AVAILABLE)
+    - updated_at
+    
+    METHODS:
+        - __str__() returns user's full name
+        - get_total_applications()
+```
+
+### 1.4 PROJECT/ORDER MANAGEMENT
+```
+MODEL: ServiceOrder
+    - id
+    - order_number (auto-generated unique)
+    - client (ForeignKey to CustomUser - CLIENT)
+    - service (ForeignKey to Service)
+    - package (ForeignKey to ServicePackage, optional)
+    - order_details (custom requirements from client)
+    - status (choices: PENDING, IN_PROGRESS, REVIEW, COMPLETED, CANCELLED)
+    - priority (choices: LOW, MEDIUM, HIGH, URGENT)
+    - total_price
+    - payment_status (choices: UNPAID, PARTIAL, PAID, REFUNDED)
+    - assigned_to (ForeignKey to CustomUser - SERVICE_PROVIDER, optional)
+    - start_date
+    - due_date
+    - completion_date (optional)
+    - created_at
+    - updated_at
+    
+    METHODS:
+        - __str__() returns order number
+        - generate_order_number()
+        - calculate_total()
+        - mark_as_completed()
+        - cancel_order()
+
+MODEL: OrderFile
+    - id
+    - order (ForeignKey to ServiceOrder)
+    - uploaded_by (ForeignKey to CustomUser)
+    - file (file upload)
+    - file_type (choices: REQUIREMENT, DELIVERABLE, REVISION)
+    - description
+    - uploaded_at
+    
+    METHODS:
+        - __str__() returns file name
+        - get_file_size()
+
+MODEL: OrderMilestone
+    - id
+    - order (ForeignKey to ServiceOrder)
+    - title
+    - description
+    - status (choices: PENDING, IN_PROGRESS, COMPLETED)
+    - due_date
+    - completed_at (optional)
+    
+    METHODS:
+        - __str__() returns milestone title
+        - mark_as_completed()
+```
+
+### 1.5 PAYMENT SYSTEM
+```
+MODEL: Payment
+    - id
+    - order (ForeignKey to ServiceOrder)
+    - client (ForeignKey to CustomUser)
+    - amount
+    - payment_method (choices: CARD, BANK_TRANSFER, PAYPAL, CRYPTO)
+    - transaction_id (from payment gateway)
+    - status (choices: PENDING, COMPLETED, FAILED, REFUNDED)
+    - payment_date
+    - created_at
+    
+    METHODS:
+        - __str__() returns transaction id
+        - process_payment()
+        - refund_payment()
+
+MODEL: Invoice
+    - id
+    - invoice_number (auto-generated)
+    - order (ForeignKey to ServiceOrder)
+    - client (ForeignKey to CustomUser)
+    - issue_date
+    - due_date
+    - total_amount
+    - tax_amount (optional)
+    - status (choices: DRAFT, SENT, PAID, OVERDUE, CANCELLED)
+    - payment (ForeignKey to Payment, optional)
+    - notes
+    
+    METHODS:
+        - __str__() returns invoice number
+        - generate_invoice_number()
+        - send_invoice_email()
+        - mark_as_paid()
+```
+
+### 1.6 COMMUNICATION SYSTEM
+```
+MODEL: Message
+    - id
+    - sender (ForeignKey to CustomUser)
+    - recipient (ForeignKey to CustomUser)
+    - order (ForeignKey to ServiceOrder, optional - context)
+    - subject
+    - body
+    - is_read
+    - sent_at
+    - read_at (optional)
+    
+    METHODS:
+        - __str__() returns subject
+        - mark_as_read()
+
+MODEL: Notification
+    - id
+    - user (ForeignKey to CustomUser)
+    - notification_type (choices: ORDER_UPDATE, MESSAGE, PAYMENT, JOB_APPLICATION)
+    - title
+    - message
+    - link (optional URL)
+    - is_read
+    - created_at
+    
+    METHODS:
+        - __str__() returns title
+        - mark_as_read()
+
+MODEL: Review
+    - id
+    - order (ForeignKey to ServiceOrder)
+    - client (ForeignKey to CustomUser)
+    - rating (1-5)
+    - comment
+    - created_at
+    
+    METHODS:
+        - __str__() returns rating + service name
+```
+
+---
+
+## 2. DJANGO BACKEND LOGIC (Views & Functions)
+
+### 2.1 AUTHENTICATION & USER MANAGEMENT
+```
+VIEW: register_user
+    INPUT: POST data (email, username, password, user_type, etc.)
+    PROCESS:
+        - Validate input data
+        - Check if email/username already exists
+        - Hash password
+        - Create CustomUser object
+        - Save to database
+        - Send welcome email
+    OUTPUT: JSON response (success/error, user data)
+
+VIEW: login_user
+    INPUT: POST data (email/username, password)
+    PROCESS:
+        - Authenticate credentials
+        - Create session or JWT token
+        - Update last_login
+    OUTPUT: JSON response (success/error, token/session, user data)
+
+VIEW: logout_user
+    INPUT: Request
+    PROCESS:
+        - Destroy session or invalidate token
+    OUTPUT: JSON response (success)
+
+VIEW: get_user_profile
+    INPUT: GET request, user_id
+    PROCESS:
+        - Fetch user from database
+        - Get related data (orders, applications, etc.)
+    OUTPUT: JSON response (user profile data)
+
+VIEW: update_user_profile
+    INPUT: POST/PUT data (profile fields)
+    PROCESS:
+        - Validate data
+        - Update user object
+        - Save to database
+    OUTPUT: JSON response (success/error, updated data)
+```
+
+### 2.2 SERVICE CATALOG
+```
+VIEW: get_all_services
+    INPUT: GET request, optional filters (category, price_range)
+    PROCESS:
+        - Query Service model
+        - Filter by category if specified
+        - Apply price filters
+        - Order by created_at or popularity
+    OUTPUT: JSON response (list of services)
+
+VIEW: get_service_detail
+    INPUT: GET request, service_id
+    PROCESS:
+        - Fetch service by ID
+        - Get related packages
+        - Get reviews/ratings
+    OUTPUT: JSON response (service details)
+
+VIEW: get_service_categories
+    INPUT: GET request
+    PROCESS:
+        - Fetch all active categories
+        - Count services per category
+    OUTPUT: JSON response (list of categories)
+
+VIEW: create_service (ADMIN only)
+    INPUT: POST data (service details)
+    PROCESS:
+        - Validate admin permissions
+        - Validate input data
+        - Create Service object
+        - Save to database
+    OUTPUT: JSON response (success/error, service data)
+```
+
+### 2.3 RECRUITMENT
+```
+VIEW: get_job_postings
+    INPUT: GET request, optional filters (location, type, experience)
+    PROCESS:
+        - Query JobPosting model
+        - Filter active jobs only
+        - Apply user filters
+        - Order by created_at
+    OUTPUT: JSON response (list of jobs)
+
+VIEW: get_job_detail
+    INPUT: GET request, job_id
+    PROCESS:
+        - Fetch job by ID
+        - Get company info
+        - Check if user already applied
+    OUTPUT: JSON response (job details)
+
+VIEW: create_job_posting (CLIENT only)
+    INPUT: POST data (job details)
+    PROCESS:
+        - Validate client permissions
+        - Validate input data
+        - Create JobPosting object
+        - Save to database
+        - Send notification to admins
+    OUTPUT: JSON response (success/error, job data)
+
+VIEW: apply_for_job (CANDIDATE only)
+    INPUT: POST data (job_id, resume, cover_letter)
+    PROCESS:
+        - Validate candidate permissions
+        - Check if already applied
+        - Create JobApplication object
+        - Upload resume file
+        - Save to database
+        - Send notification to job poster
+    OUTPUT: JSON response (success/error)
+
+VIEW: get_candidate_applications (CANDIDATE)
+    INPUT: GET request, user_id
+    PROCESS:
+        - Query JobApplication for user
+        - Get job details for each
+    OUTPUT: JSON response (list of applications)
+
+VIEW: get_job_applications (CLIENT/ADMIN)
+    INPUT: GET request, job_id
+    PROCESS:
+        - Validate permissions
+        - Query applications for job
+        - Get candidate details
+    OUTPUT: JSON response (list of applications)
+
+VIEW: update_application_status (CLIENT/ADMIN)
+    INPUT: POST data (application_id, new_status)
+    PROCESS:
+        - Validate permissions
+        - Update application status
+        - Send notification to candidate
+    OUTPUT: JSON response (success/error)
+```
+
+### 2.4 ORDER MANAGEMENT
+```
+VIEW: create_order
+    INPUT: POST data (service_id, package_id, requirements)
+    PROCESS:
+        - Validate user authentication
+        - Fetch service and package
+        - Calculate total price
+        - Generate unique order_number
+        - Create ServiceOrder object
+        - Save to database
+        - Send confirmation email
+        - Create notification
+    OUTPUT: JSON response (success/error, order data)
+
+VIEW: get_user_orders
+    INPUT: GET request, user_id, optional status filter
+    PROCESS:
+        - Query ServiceOrder for user
+        - Filter by status if specified
+        - Order by created_at descending
+    OUTPUT: JSON response (list of orders)
+
+VIEW: get_order_detail
+    INPUT: GET request, order_id
+    PROCESS:
+        - Fetch order by ID
+        - Validate user has permission to view
+        - Get related files, milestones, messages
+    OUTPUT: JSON response (order details)
+
+VIEW: update_order_status (ADMIN/SERVICE_PROVIDER)
+    INPUT: POST data (order_id, new_status)
+    PROCESS:
+        - Validate permissions
+        - Update order status
+        - Update timestamps if completed
+        - Send notification to client
+    OUTPUT: JSON response (success/error)
+
+VIEW: upload_order_file
+    INPUT: POST data (order_id, file, file_type)
+    PROCESS:
+        - Validate user has permission
+        - Upload file to media folder
+        - Create OrderFile object
+        - Save to database
+        - Send notification
+    OUTPUT: JSON response (success/error, file info)
+
+VIEW: cancel_order
+    INPUT: POST data (order_id, reason)
+    PROCESS:
+        - Validate user is order owner or admin
+        - Check if cancellation is allowed
+        - Update order status to CANCELLED
+        - Process refund if payment made
+        - Send notification
+    OUTPUT: JSON response (success/error)
+```
+
+### 2.5 PAYMENT
+```
+VIEW: create_payment
+    INPUT: POST data (order_id, payment_method, amount)
+    PROCESS:
+        - Validate order exists and unpaid
+        - Integrate with payment gateway API
+        - Process payment
+        - Create Payment object
+        - Update order payment_status
+        - Generate invoice
+        - Send receipt email
+    OUTPUT: JSON response (success/error, payment confirmation)
+
+VIEW: verify_payment
+    INPUT: GET request, transaction_id
+    PROCESS:
+        - Query payment gateway
+        - Verify transaction status
+        - Update Payment object
+    OUTPUT: JSON response (payment status)
+
+VIEW: get_payment_history
+    INPUT: GET request, user_id
+    PROCESS:
+        - Query Payment model for user
+        - Order by payment_date descending
+    OUTPUT: JSON response (list of payments)
+
+VIEW: generate_invoice
+    INPUT: POST data (order_id)
+    PROCESS:
+        - Fetch order details
+        - Generate unique invoice_number
+        - Create Invoice object
+        - Generate PDF invoice (optional)
+        - Save to database
+    OUTPUT: JSON response (success/error, invoice data)
+```
+
+### 2.6 COMMUNICATION
+```
+VIEW: send_message
+    INPUT: POST data (recipient_id, subject, body, order_id optional)
+    PROCESS:
+        - Validate sender authentication
+        - Create Message object
+        - Save to database
+        - Create notification for recipient
+        - Send email notification (optional)
+    OUTPUT: JSON response (success/error)
+
+VIEW: get_user_messages
+    INPUT: GET request, user_id
+    PROCESS:
+        - Query messages where user is sender or recipient
+        - Order by sent_at descending
+        - Mark unread count
+    OUTPUT: JSON response (list of messages)
+
+VIEW: mark_message_as_read
+    INPUT: POST data (message_id)
+    PROCESS:
+        - Validate user is recipient
+        - Update is_read = True
+        - Update read_at timestamp
+    OUTPUT: JSON response (success)
+
+VIEW: get_notifications
+    INPUT: GET request, user_id
+    PROCESS:
+        - Query Notification model for user
+        - Order by created_at descending
+        - Limit to recent 50
+    OUTPUT: JSON response (list of notifications)
+
+VIEW: mark_notification_as_read
+    INPUT: POST data (notification_id)
+    PROCESS:
+        - Update is_read = True
+    OUTPUT: JSON response (success)
+```
+
+### 2.7 DASHBOARD & ANALYTICS
+```
+VIEW: get_client_dashboard
+    INPUT: GET request, user_id
+    PROCESS:
+        - Count total orders
+        - Count pending orders
+        - Count completed orders
+        - Calculate total spent
+        - Get recent orders (5)
+        - Get recent messages (5)
+    OUTPUT: JSON response (dashboard data)
+
+VIEW: get_admin_dashboard
+    INPUT: GET request (ADMIN only)
+    PROCESS:
+        - Count total users by type
+        - Count total orders by status
+        - Calculate total revenue
+        - Count active jobs
+        - Get pending orders
+        - Get recent registrations
+    OUTPUT: JSON response (dashboard data)
+
+VIEW: get_candidate_dashboard
+    INPUT: GET request, user_id
+    PROCESS:
+        - Count total applications
+        - Count by status (pending, shortlisted, etc.)
+        - Get recent applications
+        - Get recommended jobs
+    OUTPUT: JSON response (dashboard data)
+```
+
+---
+
+## 3. REACT FRONTEND STRUCTURE
+
+### 3.1 ROUTING
+```
+ROUTES:
+    / → Home Page
+    /services → Browse All Services
+    /services/:category → Services by Category
+    /services/:id → Service Detail Page
+    /jobs → Job Listings
+    /jobs/:id → Job Detail Page
+    /login → Login Page
+    /register → Registration Page
+    /dashboard → User Dashboard (role-based redirect)
+    /orders → My Orders
+    /orders/:id → Order Detail
+    /messages → Messages
+    /profile → User Profile
+    /admin → Admin Panel (protected)
+```
+
+### 3.2 COMPONENT STRUCTURE
+```
+COMPONENTS:
+    - Layout Components:
+        * Header (navigation, user menu)
+        * Footer
+        * Sidebar
+        * MainLayout
+    
+    - Common Components:
+        * Button
+        * Card
+        * Modal
+        * Loading Spinner
+        * Alert/Toast
+        * Form Input Components
+        * FileUpload
+        * Pagination
+    
+    - Service Components:
+        * ServiceCard
+        * ServiceList
+        * ServiceDetail
+        * ServiceFilter
+        * PackageSelector
+    
+    - Recruitment Components:
+        * JobCard
+        * JobList
+        * JobDetail
+        * ApplicationForm
+        * ApplicationList
+    
+    - Order Components:
+        * OrderCard
+        * OrderList
+        * OrderDetail
+        * OrderStatusTracker
+        * FileUploadSection
+    
+    - Dashboard Components:
+        * StatsCard
+        * RecentOrders
+        * RecentApplications
+        * NotificationsList
+    
+    - User Components:
+        * LoginForm
+        * RegisterForm
+        * ProfileEditor
+```
+
+### 3.3 API SERVICE (Axios)
+```
+API SERVICE FUNCTIONS:
+
+// Authentication
+    - login(credentials)
+    - register(userData)
+    - logout()
+    - getCurrentUser()
+    - updateProfile(profileData)
+
+// Services
+    - getAllServices(filters)
+    - getServiceById(id)
+    - getServiceCategories()
+    - searchServices(query)
+
+// Recruitment
+    - getJobs(filters)
+    - getJobById(id)
+    - createJob(jobData) [CLIENT]
+    - applyForJob(applicationData) [CANDIDATE]
+    - getMyApplications() [CANDIDATE]
+    - getJobApplications(jobId) [CLIENT/ADMIN]
+    - updateApplicationStatus(applicationId, status) [CLIENT/ADMIN]
+
+// Orders
+    - createOrder(orderData)
+    - getMyOrders(filters)
+    - getOrderById(id)
+    - updateOrderStatus(orderId, status) [ADMIN]
+    - uploadOrderFile(orderId, file)
+    - cancelOrder(orderId, reason)
+
+// Payments
+    - createPayment(paymentData)
+    - verifyPayment(transactionId)
+    - getPaymentHistory()
+
+// Messages
+    - sendMessage(messageData)
+    - getMessages()
+    - markAsRead(messageId)
+
+// Notifications
+    - getNotifications()
+    - markNotificationAsRead(notificationId)
+
+// Dashboard
+    - getDashboardData() [role-based]
+```
+
+### 3.4 STATE MANAGEMENT
+```
+GLOBAL STATE (Context API or Redux):
+    - authState:
+        * user (object)
+        * isAuthenticated (boolean)
+        * token
+        * userType
+    
+    - servicesState:
+        * services (array)
+        * categories (array)
+        * currentService (object)
+    
+    - ordersState:
+        * orders (array)
+        * currentOrder (object)
+    
+    - messagesState:
+        * messages (array)
+        * unreadCount (number)
+    
+    - notificationsState:
+        * notifications (array)
+        * unreadCount (number)
+```
+
+---
+
+## 4. WORKFLOW EXAMPLES
+
+### 4.1 USER REGISTRATION & LOGIN FLOW
+```
+1. User visits /register
+2. Fills registration form (email, password, user_type)
+3. Frontend validates input
+4. Frontend sends POST to /api/register/
+5. Backend validates data
+6. Backend creates user in database
+7. Backend sends welcome email
+8. Backend returns success + user data
+9. Frontend redirects to /login
+10. User logs in
+11. Backend authenticates and returns token
+12. Frontend stores token in localStorage
+13. Frontend redirects to dashboard
+```
+
+### 4.2 SERVICE ORDER FLOW
+```
+1. Client browses services at /services
+2. Client clicks on a service
+3. Frontend fetches service details
+4. Client selects package and fills requirements
+5. Client clicks "Order Now"
+6. Frontend sends POST to /api/orders/create/
+7. Backend validates user authentication
+8. Backend creates order in database
+9. Backend generates order number
+10. Backend sends confirmation email
+11. Backend creates notification
+12. Backend returns order data
+13. Frontend redirects to /orders/:id
+14. Client can view order status
+15. Admin receives notification
+16. Admin updates order status
+17. Client receives notification of updates
+```
+
+### 4.3 JOB APPLICATION FLOW
+```
+1. Candidate visits /jobs
+2. Candidate filters/searches jobs
+3. Candidate clicks on job
+4. Frontend fetches job details
+5. Candidate clicks "Apply"
+6. Candidate fills application form + uploads resume
+7. Frontend sends POST to /api/jobs/apply/
+8. Backend validates candidate authentication
+9. Backend checks if already applied
+10. Backend saves application to database
+11. Backend uploads resume file
+12. Backend sends notification to job poster
+13. Backend sends confirmation email to candidate
+14. Backend returns success
+15. Frontend shows success message
+16. Client reviews application
+17. Client updates application status
+18. Candidate receives notification
+```
+
+---
+
+## 5. ADMIN PANEL FUNCTIONS
+
+```
+ADMIN CAPABILITIES:
+    - Manage Users:
+        * View all users
+        * Edit user details
+        * Deactivate/activate accounts
+        * Assign roles
+    
+    - Manage Services:
+        * Create new services
+        * Edit existing services
+        * Activate/deactivate services
+        * Manage service categories
+        * Set pricing and packages
+    
+    - Manage Orders:
+        * View all orders
+        * Filter by status, date, client
+        * Assign orders to service providers
+        * Update order status
+        * Upload deliverables
+        * Handle cancellations/refunds
+    
+    - Manage Recruitment:
+        * View all job postings
+        * Approve/reject job posts
+        * View all applications
+        * Access candidate database
+    
+    - Payments & Invoicing:
+        * View all payments
+        * Generate invoices
+        * Process refunds
+        * View revenue reports
+    
+    - Communications:
+        * Send bulk notifications
+        * Respond to messages
+        * Manage support tickets
+    
+    - Analytics & Reports:
+        * Revenue charts
+        * User growth stats
+        * Popular services
+        * Order completion rates
+        * Job application stats
+```
+
+---
+
+## 6. SECURITY & VALIDATION
+
+```
+SECURITY MEASURES:
+    - Password hashing (Django built-in)
+    - CSRF protection for POST requests
+    - Input validation on frontend and backend
+    - File upload validation (type, size)
+    - SQL injection prevention (Django ORM)
+    - XSS prevention
+    - Rate limiting for API endpoints
+    - Secure file storage
+    - HTTPS enforcement (production)
+    - User permission checks on every request
+```
+
+---
+
+## 7. DEPLOYMENT CHECKLIST
+
+```
+BACKEND (Django):
+    - Set DEBUG = False
+    - Configure ALLOWED_HOSTS
+    - Set up production database (PostgreSQL)
+    - Configure static files serving
+    - Configure media files serving
+    - Set up email backend
+    - Configure CORS for frontend domain
+    - Set up environment variables
+    - Run migrations
+    - Collect static files
+    - Set up gunicorn/uwsgi
+    - Configure nginx
+
+FRONTEND (React):
+    - Build production bundle (npm run build)
+    - Configure API base URL
+    - Set up environment variables
+    - Deploy to hosting (Vercel, Netlify, etc.)
+    - Configure custom domain
+    - Set up SSL certificate
+
+INTEGRATIONS:
+    - Payment gateway (Stripe/Paystack/Flutterwave)
+    - Email service (SendGrid/Mailgun)
+    - File storage (AWS S3 or similar)
+    - Monitoring (Sentry)
+```
+
+---
+
+## SUMMARY OF MAIN FEATURES
+
+**5 SERVICE CATEGORIES:**
+1. Recruitment Services (Job board + Applications)
+2. Digital Solutions (Web/App Development)
+3. Creative Services (Graphics + Video)
+4. Documentation Services (CV/Proposals)
+5. Business Registration & Marketing
+
+**USER ROLES:**
+- Client (orders services)
+- Candidate (applies for jobs)
+- Admin (manages everything)
+- Service Provider (fulfills orders)
+
+**CORE WORKFLOWS:**
+1. User Registration & Authentication
+2. Browse & Order Services
+3. Job Posting & Applications
+4. Order Management & Tracking
+5. Payment Processing
+6. Messaging & Notifications
+7. Admin Management
+
+This pseudocode serves as our complete blueprint. Ready to start building?
