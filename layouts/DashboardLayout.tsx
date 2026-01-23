@@ -12,7 +12,8 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  ShieldCheck,
+  Building
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,17 +41,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const getMenuItems = () => {
     const common = [
       { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-      { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+      // { icon: Settings, label: 'Settings', path: '/dashboard/settings' }, // Placeholder for now
     ];
 
     if (user.role === 'admin') {
       return [
         { icon: LayoutDashboard, label: 'Command Center', path: '/dashboard' },
-        { icon: Users, label: 'Candidates', path: '/dashboard/candidates' },
-        { icon: Briefcase, label: 'Active Projects', path: '/dashboard/projects' },
-        { icon: Users, label: 'Partners', path: '/dashboard/partners' },
-        { icon: PieChart, label: 'Financials', path: '/dashboard/financials' },
-        ...common.slice(1)
+        { icon: ShieldCheck, label: 'Verify Payments', path: '/dashboard/candidates-verify' },
+        { icon: Building, label: 'Approve Partners', path: '/dashboard/partners-review' },
+        { icon: Users, label: 'Candidate Pool', path: '/dashboard/candidates' }, // Future placeholder
+        { icon: Briefcase, label: 'Projects', path: '/dashboard/projects' },
       ];
     }
 

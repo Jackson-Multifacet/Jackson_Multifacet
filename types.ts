@@ -38,6 +38,7 @@ export interface NewsPost {
   content: string;
   author: string;
   image?: string;
+  createdAt?: any;
 }
 
 // --- Candidate Registration Types ---
@@ -60,7 +61,7 @@ export interface Guarantor {
   workAddress: string;
   yearsKnown: string;
   relationship: string;
-  idCardImage?: File | null; // Added ID Card
+  idCardImage?: File | string | null; // Changed to allow string URL
 }
 
 export interface Acquaintance {
@@ -71,7 +72,7 @@ export interface Acquaintance {
 
 export interface CandidateRegistrationData {
   // Personal
-  passportImage?: File | null; 
+  passportImage?: File | string | null; // Changed to allow string URL
   surname: string;
   firstName: string;
   otherName: string;
@@ -114,6 +115,13 @@ export interface CandidateRegistrationData {
   paymentReference?: string;
 }
 
+export interface CandidateRecord extends CandidateRegistrationData {
+  id: string;
+  status: 'pending_payment_verification' | 'verified' | 'rejected' | 'placed';
+  submittedAt: any;
+  passportUploaded?: boolean;
+}
+
 // --- Partner Registration Types ---
 
 export type PartnerType = 'individual' | 'org' | null;
@@ -127,7 +135,7 @@ export interface IndividualPartnerData {
   nin: string;
   primarySkill: string;
   projectDescription: string;
-  idDocument?: File | null;
+  idDocument?: File | string | null; // Changed to allow string URL
 }
 
 export interface OrganizationPartnerData {
@@ -140,13 +148,18 @@ export interface OrganizationPartnerData {
   officialEmail: string;
   teamSize: string;
   servicesOffered: string[];
-  cacCertificate?: File | null;
+  cacCertificate?: File | string | null; // Changed to allow string URL
 }
 
 export interface PartnerApplication {
   type: PartnerType;
   data: IndividualPartnerData | OrganizationPartnerData;
   submittedAt?: any;
+}
+
+export interface PartnerRecord extends PartnerApplication {
+  id: string;
+  status: 'pending_review' | 'approved' | 'rejected';
 }
 
 // --- Dashboard Types ---
