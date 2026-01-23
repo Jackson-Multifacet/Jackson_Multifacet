@@ -74,15 +74,18 @@ const AIChatBot: React.FC = () => {
       
       let fullText = '';
       for await (const chunk of result) {
-        fullText += chunk.text;
-        setMessages(prev => {
-          const newArr = [...prev];
-          const lastMsg = newArr[newArr.length - 1];
-          if (lastMsg.role === 'model' && lastMsg.isStreaming) {
-            lastMsg.text = fullText;
-          }
-          return newArr;
-        });
+        const text = chunk.text;
+        if (text) {
+          fullText += text;
+          setMessages(prev => {
+            const newArr = [...prev];
+            const lastMsg = newArr[newArr.length - 1];
+            if (lastMsg.role === 'model' && lastMsg.isStreaming) {
+              lastMsg.text = fullText;
+            }
+            return newArr;
+          });
+        }
       }
 
       setMessages(prev => {
