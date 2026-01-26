@@ -218,7 +218,11 @@ const CandidateRegistration: React.FC = () => {
               <div className="flex flex-col items-center p-6 border-2 border-dashed border-white/20 rounded-2xl bg-white/5">
                 <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mb-4 overflow-hidden">
                   {formData.passportImage ? (
-                    <img src={URL.createObjectURL(formData.passportImage)} alt="Preview" className="w-full h-full object-cover" />
+                    <img 
+                      src={typeof formData.passportImage === 'string' ? formData.passportImage : URL.createObjectURL(formData.passportImage)} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover" 
+                    />
                   ) : (
                     <UserPlus size={32} className="text-slate-500" />
                   )}
@@ -381,7 +385,9 @@ const CandidateRegistration: React.FC = () => {
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleGuarantorFile(index, e)} />
                       </label>
                       <span className="text-xs text-slate-400 italic truncate max-w-[200px]">
-                        {formData.guarantors[index].idCardImage ? formData.guarantors[index].idCardImage?.name : "No file chosen"}
+                        {formData.guarantors[index].idCardImage && typeof formData.guarantors[index].idCardImage !== 'string' 
+                          ? (formData.guarantors[index].idCardImage as File).name 
+                          : "No file chosen"}
                       </span>
                     </div>
                   </div>

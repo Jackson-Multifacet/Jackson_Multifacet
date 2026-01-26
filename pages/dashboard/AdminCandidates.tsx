@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DbService } from '../../services/db';
 import { CandidateRecord } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Search, CreditCard, User, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Search, CreditCard, User, Loader2 } from 'lucide-react';
 
 const AdminCandidates: React.FC = () => {
   const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
@@ -90,7 +90,7 @@ const AdminCandidates: React.FC = () => {
                           <span className="flex items-center gap-1"><User size={12}/> {candidate.sex}, {candidate.stateOfOrigin}</span>
                           <span className="flex items-center gap-1 text-cyan"><CreditCard size={12}/> Ref: {candidate.paymentReference}</span>
                        </div>
-                       <p className="text-xs text-slate-500 mt-2">Applied for: {candidate.desiredPositions?.join(', ')}</p>
+                       <p className="text-xs text-slate-500 mt-2">Applied for: {candidate.desiredPositions?.join(', ') || 'General Pool'}</p>
                     </div>
                  </div>
 

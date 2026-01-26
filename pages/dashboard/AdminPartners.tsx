@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { DbService } from '../../services/db';
-import { PartnerRecord, IndividualPartnerData, OrganizationPartnerData } from '../../types';
+import { PartnerRecord, OrganizationPartnerData } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Search, Briefcase, Building2, User, Loader2, ExternalLink } from 'lucide-react';
+import { Check, Briefcase, Building2, User, Loader2, ExternalLink } from 'lucide-react';
 
 const AdminPartners: React.FC = () => {
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
@@ -59,9 +59,10 @@ const AdminPartners: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <AnimatePresence>
             {partners.map((partner) => {
-              const data = partner.data || {};
-              const title = isOrg(data) ? data.businessName : data.fullName;
-              const subtitle = isOrg(data) ? 'Corporate Agency' : data.professionalTitle;
+              const data = partner.data;
+              const isOrganization = isOrg(data);
+              const title = isOrganization ? data.businessName : (data as any).fullName;
+              const subtitle = isOrganization ? 'Corporate Agency' : (data as any).professionalTitle;
               
               return (
                 <motion.div
@@ -88,29 +89,33 @@ const AdminPartners: React.FC = () => {
                    </div>
 
                    <div className="flex-1 space-y-4 mb-8">
-                      {isOrg(data) ? (
+                      {isOrganization ? (
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                           <div><p className="text-slate-500 text-xs">CAC Number</p><p className="text-white">{data.cacNumber}</p></div>
-                           <div><p className="text-slate-500 text-xs">TIN</p><p className="text-white">{data.tin}</p></div>
-                           <div><p className="text-slate-500 text-xs">Contact Person</p><p className="text-white">{data.contactName}</p></div>
-                           <div><p className="text-slate-500 text-xs">Team Size</p><p className="text-white">{data.teamSize}</p></div>
-                           <div className="col-span-2"><p className="text-slate-500 text-xs">Services</p><p className="text-white">{data.servicesOffered?.join(', ')}</p></div>
-                           <div className="col-span-2">
-                             <a href={`https://${data.website}`} target="_blank" rel="noreferrer" className="text-cyan hover:underline flex items-center gap-1 text-xs">
-                               Visit Website <ExternalLink size={10} />
-                             </a>
-                           </div>
+                           <div><p className="text-slate-500 text-xs">CAC Number</p><p className="text-white">{data.cacNumber || 'N/A'}</p></div>
+                           <div><p className="text-slate-500 text-xs">TIN</p><p className="text-white">{data.tin || 'N/A'}</p></div>
+                           <div><p className="text-slate-500 text-xs">Contact Person</p><p className="text-white">{data.contactName || 'N/A'}</p></div>
+                           <div><p className="text-slate-500 text-xs">Team Size</p><p className="text-white">{data.teamSize || 'N/A'}</p></div>
+                           <div className="col-span-2"><p className="text-slate-500 text-xs">Services</p><p className="text-white">{data.servicesOffered?.join(', ') || 'None'}</p></div>
+                           {data.website && (
+                             <div className="col-span-2">
+                               <a href={data.website.startsWith('http') ? data.website : `https://${data.website}`} target="_blank" rel="noreferrer" className="text-cyan hover:underline flex items-center gap-1 text-xs">
+                                 Visit Website <ExternalLink size={10} />
+                               </a>
+                             </div>
+                           )}
                         </div>
                       ) : (
                         <div className="space-y-3 text-sm">
-                           <div><p className="text-slate-500 text-xs">NIN</p><p className="text-white">{data.nin}</p></div>
-                           <div><p className="text-slate-500 text-xs">Primary Skill</p><p className="text-white">{data.primarySkill}</p></div>
-                           <div><p className="text-slate-500 text-xs">Key Project</p><p className="text-slate-300 italic">"{data.projectDescription}"</p></div>
-                           <div>
-                             <a href={data.portfolioLink} target="_blank" rel="noreferrer" className="text-cyan hover:underline flex items-center gap-1 text-xs">
-                               View Portfolio <ExternalLink size={10} />
-                             </a>
-                           </div>
+                           <div><p className="text-slate-500 text-xs">NIN</p><p className="text-white">{(data as any).nin || 'N/A'}</p></div>
+                           <div><p className="text-slate-500 text-xs">Primary Skill</p><p className="text-white">{(data as any).primarySkill || 'N/A'}</p></div>
+                           <div><p className="text-slate-500 text-xs">Key Project</p><p className="text-slate-300 italic">"{(data as any).projectDescription || 'No description'}"</p></div>
+                           {(data as any).portfolioLink && (
+                             <div>
+                               <a href={(data as any).portfolioLink.startsWith('http') ? (data as any).portfolioLink : `https://${(data as any).portfolioLink}`} target="_blank" rel="noreferrer" className="text-cyan hover:underline flex items-center gap-1 text-xs">
+                                 View Portfolio <ExternalLink size={10} />
+                               </a>
+                             </div>
+                           )}
                         </div>
                       )}
                    </div>

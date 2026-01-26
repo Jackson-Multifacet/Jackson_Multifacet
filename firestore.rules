@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper: Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Users Collection ---
+    // Users can read/write their own profile; Admins can manage all.
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // --- News & Updates ---
+    // Public read; Admin write.
+    match /news_posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Public Forms (Contact, Partners, Newsletter) ---
+    // Anyone can create (submit); Only admins can read/manage.
+    match /contact_submissions/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /partner_applications/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+    match /newsletter_subscribers/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // --- Candidate Registrations ---
+    // Candidates can create/update their own; Admins full access.
+    match /candidate_registrations/{docId} {
+      allow create: if true;
+      allow read, update: if isAuthenticated() || isAdmin();
+    }
+
+    // --- Jobs & Applications ---
+    // Jobs are public read (or authenticated read); Admin write.
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Applications: Candidates can create; Clients/Admins can read relevant ones.
+    match /applications/{appId} {
+      allow create: if isAuthenticated();
+      allow read, update: if isAuthenticated(); // Refine in production to specific candidate/client
+    }
+
+    // --- Dashboard Data (Tasks, Projects, Invoices) ---
+    // General authenticated access for now, refine based on specific user IDs in production.
+    match /tasks/{taskId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /projects/{projectId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /invoices/{invoiceId} {
+      allow read, write: if isAuthenticated();
+    }
+    match /earnings/{earningId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // --- Notifications ---
+    match /notifications/{notifId} {
+      allow read, write: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated(); 
+    }
+  }
+}

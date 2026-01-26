@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, UserPlus, LogIn } from 'lucide-react';
+import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import Logo from './Logo';
 
 interface HeaderProps {
   mobileMenuOpen: boolean;
@@ -43,13 +44,9 @@ const Header: React.FC<HeaderProps> = ({ mobileMenuOpen, setMobileMenuOpen }) =>
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between relative">
-        <Link to="/" className="flex flex-col group">
-          <h1 className="text-2xl font-bold tracking-tight text-white group-hover:text-cyan/90 transition-colors">
-            Jackson<span className="text-cyan">Multifacet</span>
-          </h1>
-          <span className="text-[10px] uppercase tracking-widest text-slate-400">
-            A Real Value & Stakes Limited Company
-          </span>
+        <Link to="/" className="group">
+          {/* Updated size to h-12 for better visibility of details */}
+          <Logo className="h-12 w-auto" />
         </Link>
 
         {/* Desktop Nav */}
@@ -69,17 +66,11 @@ const Header: React.FC<HeaderProps> = ({ mobileMenuOpen, setMobileMenuOpen }) =>
             </Link>
           ))}
           <div className="flex items-center gap-3 border-l border-white/10 pl-6">
-             <Link 
-               to="/login"
-               className="text-sm font-medium text-slate-300 hover:text-white flex items-center gap-1"
-             >
-               <LogIn size={16} /> Login
-             </Link>
              <Link
-                to="/candidate-registration"
+                to="/dashboard"
                 className="flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.4)]"
               >
-                <UserPlus size={16} />
+                <LayoutDashboard size={16} />
                 Portal
               </Link>
           </div>
@@ -119,19 +110,12 @@ const Header: React.FC<HeaderProps> = ({ mobileMenuOpen, setMobileMenuOpen }) =>
               ))}
               <div className="h-px bg-white/10 my-1" />
               <Link
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-medium px-4 py-3 rounded-xl hover:bg-white/10 block text-slate-200 flex items-center gap-2"
-              >
-                 <LogIn size={16} /> Login
-              </Link>
-              <Link
-                to="/candidate-registration"
+                to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-sm font-bold px-4 py-3 rounded-xl bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all block flex items-center gap-2"
               >
-                <UserPlus size={16} />
-                Candidate Registration
+                <LayoutDashboard size={16} />
+                Portal Login
               </Link>
             </nav>
           </motion.div>

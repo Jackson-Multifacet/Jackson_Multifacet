@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   CheckCircle, Clock, AlertCircle, DollarSign, 
   Briefcase, TrendingUp, Users, FileText, Building2,
-  Calendar, Layers, Star
+  Calendar, Layers, Star, ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -97,18 +97,34 @@ const DashboardHome: React.FC = () => {
           <p className="text-slate-400">Your career journey is on track.</p>
         </div>
 
+        {/* Onboarding Call to Action */}
+        <div className="bg-gradient-to-r from-cyan/10 to-indigo-600/10 border border-cyan/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+           <div>
+             <h3 className="text-xl font-bold text-white mb-2">Complete Your Registration</h3>
+             <p className="text-slate-300 text-sm max-w-lg">
+               You need to complete your profile, upload your ID, and provide guarantors to be visible to employers.
+             </p>
+           </div>
+           <Link 
+             to="/dashboard/onboarding" 
+             className="px-6 py-3 bg-cyan text-midnight font-bold rounded-full hover:bg-white transition-all flex items-center gap-2 whitespace-nowrap"
+           >
+             Continue Registration <ArrowRight size={18} />
+           </Link>
+        </div>
+
         {/* Application Tracker */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-6">Application Status</h3>
           <div className="relative">
              <div className="absolute top-1/2 left-0 w-full h-1 bg-white/10 -translate-y-1/2" />
-             <div className="absolute top-1/2 left-0 w-[50%] h-1 bg-cyan -translate-y-1/2 shadow-[0_0_10px_#00d4ff]" />
+             <div className="absolute top-1/2 left-0 w-[20%] h-1 bg-cyan -translate-y-1/2 shadow-[0_0_10px_#00d4ff]" />
              
              <div className="relative z-10 flex justify-between">
                 {[
                   { label: 'Registered', status: 'done' },
-                  { label: 'Payment', status: 'done' },
-                  { label: 'Guarantor Check', status: 'current' },
+                  { label: 'Payment', status: 'pending' },
+                  { label: 'Guarantor Check', status: 'pending' },
                   { label: 'Interview', status: 'pending' },
                   { label: 'Placed', status: 'pending' }
                 ].map((step, i) => (
@@ -125,20 +141,13 @@ const DashboardHome: React.FC = () => {
                 ))}
              </div>
           </div>
-          <div className="mt-8 bg-cyan/10 border border-cyan/20 rounded-lg p-4 flex items-start gap-3">
-             <Clock className="text-cyan shrink-0 mt-0.5" size={18} />
-             <div>
-               <p className="text-sm font-bold text-white">Action Required: Guarantor ID</p>
-               <p className="text-xs text-slate-400">One of your guarantors has not uploaded their ID. Please remind them.</p>
-             </div>
-          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard icon={Briefcase} label="Matched Jobs" value="12" color="indigo" />
-          <StatCard icon={TrendingUp} label="Profile Strength" value="85%" color="green" />
-          <StatCard icon={FileText} label="Applications" value="3" color="amber" />
+          <StatCard icon={Briefcase} label="Matched Jobs" value="0" color="indigo" />
+          <StatCard icon={TrendingUp} label="Profile Strength" value="20%" color="green" />
+          <StatCard icon={FileText} label="Applications" value="0" color="amber" />
         </div>
       </div>
     );

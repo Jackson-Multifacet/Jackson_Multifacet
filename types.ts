@@ -37,7 +37,22 @@ export interface NewsPost {
   excerpt: string;
   content: string;
   author: string;
+  authorId?: string; // Link to user
   image?: string;
+  status: 'published' | 'pending' | 'rejected'; // Approval workflow
+  likes: number; // Social engagement
+  createdAt?: any;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string; // Who receives it
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  timestamp: any;
+  link?: string; // Optional redirect
   createdAt?: any;
 }
 
@@ -61,7 +76,7 @@ export interface Guarantor {
   workAddress: string;
   yearsKnown: string;
   relationship: string;
-  idCardImage?: File | string | null; // Changed to allow string URL
+  idCardImage?: File | string | null;
 }
 
 export interface Acquaintance {
@@ -72,7 +87,7 @@ export interface Acquaintance {
 
 export interface CandidateRegistrationData {
   // Personal
-  passportImage?: File | string | null; // Changed to allow string URL
+  passportImage?: File | string | null;
   surname: string;
   firstName: string;
   otherName: string;
@@ -103,9 +118,9 @@ export interface CandidateRegistrationData {
   jobMode: 'Remote' | 'On-Site' | 'Hybrid' | '';
   yearsExperience: string;
 
-  // Guarantors (Changed to Array of 2)
+  // Guarantors
   guarantors: [Guarantor, Guarantor];
-  guarantorConsent: boolean; // Added consent flag
+  guarantorConsent: boolean;
 
   // References
   acquaintances: Acquaintance[];
@@ -130,12 +145,12 @@ export interface IndividualPartnerData {
   fullName: string;
   professionalTitle: string;
   whatsapp: string;
-  email: string; // Added for contact
+  email: string;
   portfolioLink: string;
   nin: string;
   primarySkill: string;
   projectDescription: string;
-  idDocument?: File | string | null; // Changed to allow string URL
+  idDocument?: File | string | null;
 }
 
 export interface OrganizationPartnerData {
@@ -148,7 +163,7 @@ export interface OrganizationPartnerData {
   officialEmail: string;
   teamSize: string;
   servicesOffered: string[];
-  cacCertificate?: File | string | null; // Changed to allow string URL
+  cacCertificate?: File | string | null;
 }
 
 export interface PartnerApplication {
@@ -191,4 +206,37 @@ export interface Project {
   progress: number;
   deadline: string;
   category: string;
+}
+
+// --- Job & Invoicing Types ---
+
+export interface Job {
+  id: string;
+  title: string;
+  company: string; // Hidden from candidate until placed usually, but shown for now
+  location: string;
+  type: 'Full-time' | 'Contract' | 'Remote';
+  salaryRange: string;
+  postedAt: string;
+  description: string;
+}
+
+export interface JobApplication {
+  id: string;
+  jobId: string;
+  candidateId: string;
+  jobTitle: string;
+  company: string;
+  appliedAt: string;
+  status: 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Rejected';
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  status: 'paid' | 'pending' | 'overdue';
+  issuedDate: string;
 }

@@ -57,10 +57,10 @@ const Recruitment: React.FC = () => {
             </ul>
 
             <Link 
-              to="/candidate-registration"
+              to="/dashboard"
               className="w-full py-4 rounded-xl bg-cyan text-midnight font-bold flex items-center justify-center gap-2 hover:bg-white transition-all relative z-10 group/btn"
             >
-              Register Now <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+              Register / Login <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
             </Link>
           </div>
         </motion.div>

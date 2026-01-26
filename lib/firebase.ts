@@ -1,43 +1,51 @@
-import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
+// @ts-ignore
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
+// @ts-ignore
+import { getAnalytics } from 'firebase/analytics';
 
-// Go to Firebase Console > Project Settings > General > Your Apps > SDK Setup and Configuration
+// Live Firebase Configuration for Jackson Multifacet
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "", 
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "", 
-  projectId: process.env.FIREBASE_PROJECT_ID || "", 
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: process.env.FIREBASE_APP_ID || ""
+  apiKey: "AIzaSyDyC1t5oMFCTZyh7u_Q_y9ZkeinmRBZL-I",
+  authDomain: "jackson-multifacet.firebaseapp.com",
+  projectId: "jackson-multifacet",
+  storageBucket: "jackson-multifacet.firebasestorage.app",
+  messagingSenderId: "285810215421",
+  appId: "1:285810215421:web:147dd86abd7a850177b194",
+  measurementId: "G-VLQG6Y6402"
 };
 
 let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
 let storage: FirebaseStorage | undefined;
+let analytics: any | undefined;
 
 try {
-  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    const apps = getApps();
-    if (apps.length === 0) {
-      app = initializeApp(firebaseConfig);
-    } else {
-      app = apps[0];
-    }
-    
-    if (app) {
-        db = getFirestore(app);
-        auth = getAuth(app);
-        storage = getStorage(app);
-        console.log("Firebase services initialized successfully");
-    }
+  // Prevent multiple initializations
+  const apps = getApps();
+  if (apps.length === 0) {
+    app = initializeApp(firebaseConfig);
   } else {
-    console.warn("Firebase config missing. Some features may not work.");
+    app = getApp();
+  }
+  
+  if (app) {
+      db = getFirestore(app);
+      auth = getAuth(app);
+      storage = getStorage(app);
+      
+      // Analytics is only supported in browser environments
+      if (typeof window !== 'undefined') {
+        analytics = getAnalytics(app);
+      }
+      
+      console.log("Firebase initialized successfully (Live Mode).");
   }
 } catch (error) {
-  console.error("Firebase initialization error:", error);
+  console.error("Firebase initialization failed:", error);
 }
 
-export { app, db, auth, storage };
+export { app, db, auth, storage, analytics };

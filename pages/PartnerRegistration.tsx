@@ -263,7 +263,7 @@ const PartnerRegistration: React.FC = () => {
                            <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files && setIndividualForm({...individualForm, idDocument: e.target.files[0]})} />
                         </label>
                      </div>
-                     {individualForm.idDocument && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={12}/> {individualForm.idDocument.name}</p>}
+                     {individualForm.idDocument && typeof individualForm.idDocument !== 'string' && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={12}/> {(individualForm.idDocument as File).name}</p>}
                   </div>
                 </>
               )}
@@ -341,7 +341,7 @@ const PartnerRegistration: React.FC = () => {
                            <input type="file" className="hidden" accept="image/*,.pdf" onChange={e => e.target.files && setOrgForm({...orgForm, cacCertificate: e.target.files[0]})} />
                         </label>
                      </div>
-                     {orgForm.cacCertificate && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={12}/> {orgForm.cacCertificate.name}</p>}
+                     {orgForm.cacCertificate && typeof orgForm.cacCertificate !== 'string' && <p className="text-xs text-green-400 mt-2 flex items-center gap-1"><Check size={12}/> {(orgForm.cacCertificate as File).name}</p>}
                   </div>
                 </>
               )}

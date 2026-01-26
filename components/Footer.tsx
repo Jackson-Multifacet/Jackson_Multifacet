@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Check, Loader2, ArrowRight } from 'lucide-react';
 import { DbService } from '../services/db';
 import { Link } from 'react-router-dom';
+import Logo from './Logo';
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -28,7 +29,8 @@ const Footer: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-12 items-start mb-12">
           {/* Brand Info */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">Jackson<span className="text-cyan">Multifacet</span></h2>
+            {/* Updated size to h-10 */}
+            <Logo className="h-10 w-auto" />
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
               Empowering businesses through elite recruitment, strategic development, and robust IT infrastructure.
             </p>
