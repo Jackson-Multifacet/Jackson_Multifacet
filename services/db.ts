@@ -365,6 +365,15 @@ export const DbService = {
     }
   },
 
+  async uploadProfileImage(uid: string, file: File): Promise<string | null> {
+    try {
+      return await uploadFile(file, `profiles/${uid}`);
+    } catch (e) {
+      console.error("Error uploading profile image:", e);
+      return null;
+    }
+  },
+
   // --- NOTIFICATIONS SYSTEM ---
 
   async createNotification(userId: string, notification: Omit<AppNotification, 'id' | 'userId' | 'read' | 'timestamp' | 'createdAt'>): Promise<void> {

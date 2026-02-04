@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { DbService } from '../../services/db';
 import { motion } from 'framer-motion';
@@ -8,14 +8,15 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setIsSaving(true);
     
-    // In a real app, we would upload the avatar here too
     const success = await DbService.updateUserProfile(user.uid, { name });
     
     setIsSaving(false);
@@ -23,6 +24,32 @@ const Settings: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploading(true);
+    try {
+      // Use the existing uploadFile logic through a new service method or directly if needed
+      // Here we'll add a method to DbService to handle profile image specifically
+      const photoURL = await DbService.uploadProfileImage(user.uid, file);
+      if (photoURL) {
+        await DbService.updateUserProfile(user.uid, { photoURL });
+        // The AuthContext should ideally pick up this change if it's listening to user doc
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error("Error uploading profile image:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -36,15 +63,29 @@ const Settings: React.FC = () => {
         {/* Left Column - Profile Card */}
         <div className="md:col-span-1">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
-            <div className="relative inline-block mb-4 group cursor-pointer">
+            <div 
+              className="relative inline-block mb-4 group cursor-pointer"
+              onClick={triggerFileInput}
+            >
               <img 
-                src={user?.avatar} 
+                src={user?.avatar || 'https://via.placeholder.com/150'} 
                 alt="Profile" 
-                className="w-24 h-24 rounded-full border-4 border-midnight shadow-xl"
+                className="w-24 h-24 rounded-full border-4 border-midnight shadow-xl object-cover"
               />
               <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera size={24} className="text-white" />
+                {isUploading ? (
+                  <Loader2 size={24} className="text-white animate-spin" />
+                ) : (
+                  <Camera size={24} className="text-white" />
+                )}
               </div>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden" 
+                accept="image/*"
+              />
             </div>
             
             <h3 className="text-lg font-bold text-white">{user?.name}</h3>

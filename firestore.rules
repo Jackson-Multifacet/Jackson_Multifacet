@@ -43,10 +43,11 @@ service cloud.firestore {
     }
 
     // --- Candidate Registrations ---
-    // Candidates can create/update their own; Admins full access.
+    // Anyone can create a registration (e.g., public form).
+    // After creation, only the user who registered (based on 'userId') or an admin can read/update/delete it.
     match /candidate_registrations/{docId} {
       allow create: if true;
-      allow read, update: if isAuthenticated() || isAdmin();
+      allow read, update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
     // --- Jobs & Applications ---
@@ -56,31 +57,35 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Applications: Candidates can create; Clients/Admins can read relevant ones.
+    // Applications: Candidates can create their own. Candidates can read/update their own. Admins can read/update all.
+    // NOTE: For clients to read relevant applications, more complex rules (e.g., checking job ownership) would be needed.
     match /applications/{appId} {
-      allow create: if isAuthenticated();
-      allow read, update: if isAuthenticated(); // Refine in production to specific candidate/client
+      allow create: if isAuthenticated() && request.resource.data.candidateId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (request.auth.uid == resource.data.candidateId || isAdmin());
     }
 
-    // --- Dashboard Data (Tasks, Projects, Invoices) ---
-    // General authenticated access for now, refine based on specific user IDs in production.
+    // --- Dashboard Data (Tasks, Projects, Invoices, Earnings) ---
+    // Each document must have a 'userId' field to indicate ownership.
+    // Users can only read/write/delete their own documents; Admins have full access.
     match /tasks/{taskId} {
-      allow read, write: if isAuthenticated();
+      allow read, write, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     match /projects/{projectId} {
-      allow read, write: if isAuthenticated();
+      allow read, write, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     match /invoices/{invoiceId} {
-      allow read, write: if isAuthenticated();
+      allow read, write, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     match /earnings/{earningId} {
-      allow read, write: if isAuthenticated();
+      allow read, write, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
     }
     
     // --- Notifications ---
+    // Users can read/write their own notifications. Admins can manage all.
+    // Creation: A user can only create a notification for themselves. Backend (Firebase Function) can create for others.
     match /notifications/{notifId} {
-      allow read, write: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated(); 
+      allow read, write, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid; 
     }
   }
 }
