@@ -1,30 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, Bot } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '../types';
-
-const SYSTEM_INSTRUCTION = `
-You are "Jenefa", the advanced AI concierge for Jackson Multifacet, a subsidiary of Real Value & Stakes Limited.
-Your tone is ultra-modern, professional, knowledgeable, and slightly futuristic but warm.
-
-Your knowledge base:
-1. **Recruitment**: We offer Corporate Staffing (Executive search) and Candidate Placement.
-2. **Business Dev**: Services include CV Revamping, Proposal Writing, Branding Strategy, Market Research.
-3. **IT Support**: Web & App Development, Technical Support.
-4. **Pricing**: 
-   - Recruitment: ₦20k - ₦500k (Annual).
-   - Candidate Placement: 50% of 1st month salary (Success fee).
-   - Creative Services: Proposals start at ₦50,000; Branding at ₦10,000.
-   - We are open to negotiation ("Flexible Pricing").
-
-Guidelines:
-- Keep answers concise and helpful.
-- Use formatting (bolding) for key figures.
-- If asked about something outside our scope, politely steer back to our services.
-- Always be polite and encourage the user to use the "Contact" form for complex inquiries.
-`;
 
 const AIChatBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,48 +30,21 @@ const AIChatBot: React.FC = () => {
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const model = "gemini-3-flash-preview";
-
-      setMessages(prev => [...prev, { role: 'model', text: '', isStreaming: true }]);
-
-      const history = messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.text }]
-      }));
-
-      const chat = ai.chats.create({
-        model: model,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
+      // SECURITY: Chat logic now calls the backend API instead of using client-side API keys
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        history: history
+        body: JSON.stringify({ message: userMsg }),
       });
 
-      const result = await chat.sendMessageStream({ message: userMsg });
-      
-      let fullText = '';
-      for await (const chunk of result) {
-        const text = chunk.text;
-        if (text) {
-          fullText += text;
-          setMessages(prev => {
-            const newArr = [...prev];
-            const lastMsg = newArr[newArr.length - 1];
-            if (lastMsg.role === 'model' && lastMsg.isStreaming) {
-              lastMsg.text = fullText;
-            }
-            return newArr;
-          });
-        }
+      if (!response.ok) {
+        throw new Error('Failed to get response from assistant');
       }
 
-      setMessages(prev => {
-        const newArr = [...prev];
-        const lastMsg = newArr[newArr.length - 1];
-        lastMsg.isStreaming = false;
-        return newArr;
-      });
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'model', text: data.reply }]);
 
     } catch (error) {
       console.error("AI Error:", error);
@@ -179,7 +130,7 @@ const AIChatBot: React.FC = () => {
                   </div>
                 </div>
               ))}
-              {isTyping && messages[messages.length-1].role !== 'model' && (
+              {isTyping && (
                  <div className="flex justify-start">
                    <div className="bg-white/5 border border-white/10 rounded-2xl p-3 rounded-tl-none flex gap-1">
                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}/>

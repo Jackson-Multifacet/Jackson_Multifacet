@@ -11,13 +11,11 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3001;
 
-// SECURITY: Use Helmet to set various HTTP headers for protection
 app.use(helmet());
 
-// SECURITY: Rate Limiting to prevent brute-force and DoS
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again after 15 minutes'
@@ -34,7 +32,6 @@ const genAI = new GoogleGenAI(apiKey);
 
 app.use(express.json());
 
-// SECURITY: CORS Configuration - specify allowed origins in production
 const corsOptions = {
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
   optionsSuccessStatus: 200
@@ -91,14 +88,14 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Valid message is required' });
   }
 
-  // SECURITY: Basic input length check
   if (message.length > 500) {
     return res.status(400).json({ error: 'Message too long' });
   }
 
   try {
     const websiteContext = await dynamicKnowledgeBase.getContent();
-    const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+    // Apply a moderate temperature for a balanced conversational style
+    const model = genAI.getGenerativeModel({ model: "gemini-pro", generationConfig: { temperature: 0.5 } });
 
     const prompt = `
       You are "JacksonBot", the AI assistant for Jackson Multifacet.
@@ -115,8 +112,50 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply: response.text() });
 
   } catch (error) {
-    console.error('Chat API Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('[Chat API] Error processing request:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error occurred while processing your request.' });
+  }
+});
+
+// New endpoint for Career Copilot resume evaluation
+app.post('/api/career-copilot-evaluate', async (req, res) => {
+  const { resumeText, jobDescription } = req.body;
+
+  if (!resumeText || !jobDescription) {
+    return res.status(400).json({ error: 'Resume text and job description are required.' });
+  }
+
+  // Basic length checks
+  if (resumeText.length > 10000 || jobDescription.length > 2000) {
+    return res.status(400).json({ error: 'Input too long. Resume max 10k chars, Job Description max 2k chars.' });
+  }
+
+  try {
+    // Use a lower temperature for more factual and less creative evaluation
+    const model = genAI.getGenerativeModel({ model: "gemini-pro", generationConfig: { temperature: 0.3 } });
+
+    const prompt = `
+      You are an expert career consultant providing feedback on a candidate's resume against a specific job description.
+      Analyze the provided resume and job description. Provide:
+      1. A compatibility score (out of 100).
+      2. Strengths of the resume relevant to the job.
+      3. Areas for improvement in the resume to better match the job description.
+      4. Keywords from the job description that are missing or underrepresented in the resume.
+
+      --- RESUME TEXT ---
+      ${resumeText}
+      --- JOB DESCRIPTION ---
+      ${jobDescription}
+      --- EVALUATION ---
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    res.json({ evaluation: response.text() });
+
+  } catch (error) {
+    console.error('[Career Copilot API] Error processing request:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error occurred during resume evaluation.' });
   }
 });
 
