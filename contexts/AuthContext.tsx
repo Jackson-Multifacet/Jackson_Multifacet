@@ -9,7 +9,6 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
-  User as FirebaseUser 
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { DbService } from '../services/db';
@@ -45,9 +44,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // If we are in a purely mock environment (no auth), stop loading immediately
+    // SECURITY: "Offline Mode" is strictly for development environments where Firebase is not initialized.
     if (!auth) {
-      console.warn("Firebase Auth is not initialized. Running in Offline Mode.");
+      if (process.env.NODE_ENV === 'production') {
+        console.error("Firebase Auth initialization failed in production!");
+        setLoading(false);
+        return;
+      }
+      console.warn("Firebase Auth is not initialized. Running in Offline Mode (Development).");
       setLoading(false);
       return;
     }
@@ -73,7 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (err.code === 'auth/unauthorized-domain') {
         setError(`DOMAIN_ERROR: ${window.location.hostname}`);
       } else {
-        setError(err.message);
+        setError("An error occurred during login. Please try again.");
       }
     });
 
@@ -99,8 +103,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           avatar: firebaseUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${firebaseUser.email}`
         });
       } else {
-        // Only clear user if not in demo mode (simple check)
-        if (!user || !user.uid.startsWith('demo-')) {
+        // SECURITY: Only allow demo users in non-production environments
+        if (process.env.NODE_ENV === 'production') {
+          setUser(null);
+        } else if (!user || !user.uid.startsWith('demo-')) {
           setUser(null);
         }
       }
@@ -114,6 +120,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- BYPASS FOR SANDBOX ENVIRONMENTS ---
   const loginAsDemoUser = (role: UserRole) => {
+    // SECURITY: Block demo login in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error("Demo login is disabled in production.");
+      return;
+    }
     const demoUser: User = {
       uid: `demo-${Date.now()}`,
       name: `Demo ${role ? role.charAt(0).toUpperCase() + role.slice(1) : 'User'}`,
@@ -140,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (err.code === 'auth/unauthorized-domain') {
         setError(`DOMAIN_ERROR: ${window.location.hostname}`);
       } else {
-        setError(err.message);
+        setError("Google Login failed. Please try again.");
       }
       throw err;
     }
@@ -164,7 +175,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (err: any) {
       console.error("Signup failed", err);
-      setError(err.message);
+      // Generic error message for security
+      setError("Signup failed. Please check your details and try again.");
       throw err;
     }
   };
@@ -176,7 +188,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await signInWithEmailAndPassword(auth, email, pass);
     } catch (err: any) {
       console.error("Login failed", err);
-      setError(err.message);
+      // Generic error message for security
+      setError("Invalid email or password.");
       throw err;
     }
   };
@@ -198,9 +211,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const assignRole = async (role: UserRole) => {
     if (!user || !role) return;
     
+    // SECURITY: Prevent role assignment if already assigned unless admin (in a real scenario)
+    // For now, we update local state and persist if not demo.
+    
     setUser({ ...user, role });
     
-    // Only persist if not a demo user
     if (db && !user.uid.startsWith('demo-')) {
       try {
         await DbService.setUserRole(
