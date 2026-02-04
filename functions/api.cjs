@@ -7,9 +7,30 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs').promises;
 const path = require('path');
+const admin = require('firebase-admin');
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// --- Firebase Admin SDK Initialization ---
+// You'll need to configure Firebase Admin SDK. 
+// Best practice is to use a service account key file in production environments
+// or rely on Google Application Default Credentials in deployed Firebase Functions.
+// For local development, you can point to a downloaded service account key:
+// const serviceAccount = require("../path/to/your/serviceAccountKey.json");
+
+// For this example, we'll assume Firebase Admin SDK is initialized via environment variables
+// (e.g., in a Firebase Function environment) or via `GOOGLE_APPLICATION_CREDENTIALS`.
+// If running locally, ensure your `GOOGLE_APPLICATION_CREDENTIALS` environment variable is set
+// to the path of your service account key file.
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault() // Uses GOOGLE_APPLICATION_CREDENTIALS or Firebase Function defaults
+  });
+}
+
+const db = admin.firestore();
 
 app.use(helmet());
 
@@ -81,6 +102,44 @@ const dynamicKnowledgeBase = {
   }
 };
 
+// --- Middleware for Authentication ---
+const isAuthenticated = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken; // Attach user info to the request
+    next();
+  } catch (error) {
+    console.error("Error verifying Firebase ID token:", error);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
+};
+
+// --- Middleware for Admin Authorization ---
+const isAdmin = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(403).json({ error: 'Forbidden: User not authenticated' });
+  }
+
+  try {
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
+    if (!userDoc.exists || userDoc.data().role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Not an administrator' });
+    }
+    next();
+  } catch (error) {
+    console.error("Error checking user role:", error);
+    return res.status(500).json({ error: 'Internal server error during authorization' });
+  }
+};
+
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -94,7 +153,6 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     const websiteContext = await dynamicKnowledgeBase.getContent();
-    // Apply a moderate temperature for a balanced conversational style
     const model = genAI.getGenerativeModel({ model: "gemini-pro", generationConfig: { temperature: 0.5 } });
 
     const prompt = `
@@ -117,21 +175,18 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// New endpoint for Career Copilot resume evaluation
-app.post('/api/career-copilot-evaluate', async (req, res) => {
+app.post('/api/career-copilot-evaluate', isAuthenticated, async (req, res) => {
   const { resumeText, jobDescription } = req.body;
 
   if (!resumeText || !jobDescription) {
     return res.status(400).json({ error: 'Resume text and job description are required.' });
   }
 
-  // Basic length checks
   if (resumeText.length > 10000 || jobDescription.length > 2000) {
     return res.status(400).json({ error: 'Input too long. Resume max 10k chars, Job Description max 2k chars.' });
   }
 
   try {
-    // Use a lower temperature for more factual and less creative evaluation
     const model = genAI.getGenerativeModel({ model: "gemini-pro", generationConfig: { temperature: 0.3 } });
 
     const prompt = `
@@ -156,6 +211,24 @@ app.post('/api/career-copilot-evaluate', async (req, res) => {
   } catch (error) {
     console.error('[Career Copilot API] Error processing request:', error.message, error.stack);
     res.status(500).json({ error: 'Internal server error occurred during resume evaluation.' });
+  }
+});
+
+// Placeholder Admin API Endpoint
+app.get('/api/admin/dashboard-stats', isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    // In a real application, you would fetch actual admin-specific data here
+    // For demonstration, return mock data
+    res.json({
+      totalUsers: 1234,
+      pendingRegistrations: 56,
+      activeJobs: 78,
+      revenueLastMonth: '₦5,000,000',
+      message: `Welcome, Admin ${req.user.name || req.user.email || 'User'}! This is secure admin data.`
+    });
+  } catch (error) {
+    console.error('[Admin API] Error fetching dashboard stats:', error.message, error.stack);
+    res.status(500).json({ error: 'Internal server error fetching admin stats.' });
   }
 });
 
